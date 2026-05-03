@@ -482,8 +482,8 @@ pub const Transport = struct {
     pub fn close(self: *Transport) void {
         self.log.info("bin.Transport close requested", .{});
 
-        if (self.f != null) {
-            self.f.?.close(self.io);
+        if (self.f) |f| {
+            f.close(self.io);
         }
 
         self.f = null;

@@ -578,8 +578,8 @@ pub const Transport = struct {
     pub fn deinit(self: *Transport) void {
         logging.traceWithSrc(self.log, @src(), "ssh2.Transport deinitializing", .{});
 
-        if (self.proxy_session != null) {
-            libssh2FreeSession(self.io, self.proxy_session, self.log);
+        if (self.proxy_session) |proxy_session| {
+            libssh2FreeSession(self.io, proxy_session, self.log);
         }
 
         if (self.initial_channel) |chan| {
@@ -1766,8 +1766,8 @@ pub const Transport = struct {
             libssh2DisconnectSession(self.io, sess, self.log);
         }
 
-        if (self.stream != null) {
-            self.stream.?.close(self.io);
+        if (self.stream) |stream| {
+            stream.close(self.io);
             self.stream = null;
             self.socket = null;
         }

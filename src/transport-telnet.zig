@@ -264,8 +264,8 @@ pub const Transport = struct {
     pub fn close(self: *Transport) void {
         self.log.info("telnet.Transport close requested", .{});
 
-        if (self.stream != null) {
-            self.stream.?.close(self.io);
+        if (self.stream) |stream| {
+            stream.close(self.io);
             self.stream = null;
             self.socket = null;
         }
