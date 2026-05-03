@@ -854,21 +854,6 @@ pub const Session = struct {
                 }
             }
 
-            defer {
-                std.Io.Clock.Duration.sleep(
-                    .{
-                        .clock = .awake,
-                        .raw = .fromNanoseconds(cur_read_delay_ns),
-                    },
-                    self.io,
-                ) catch |err| {
-                    self.log.warn(
-                        "session.Session readTimeout: sleep error '{}', ignoring",
-                        .{err},
-                    );
-                };
-            }
-
             const n = try self.read(buf);
 
             if (n == 0) {
@@ -921,6 +906,19 @@ pub const Session = struct {
 
                 return match_indexes;
             }
+
+            std.Io.Clock.Duration.sleep(
+                .{
+                    .clock = .awake,
+                    .raw = .fromNanoseconds(cur_read_delay_ns),
+                },
+                self.io,
+            ) catch |err| {
+                self.log.warn(
+                    "session.Session readTimeout: sleep error '{}', ignoring",
+                    .{err},
+                );
+            };
         }
     }
 
