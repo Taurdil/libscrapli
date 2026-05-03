@@ -198,8 +198,16 @@ pub const Transport = struct {
 
             try self.waiter.wait(self.socket.?);
 
-            _ = try std.posix.read(self.socket.?, &control_char_buf);
-
+            const n = try std.posix.read(self.socket.?, &control_char_buf);
+            if (n == 0) {
+                return errors.wrapCriticalError(
+                    errors.ScrapliError.Transport,
+                    @src(),
+                    self.log,
+                    "telnet.Transport handleControlChars: peer closed connection during telnet negotiation",
+                    .{},
+                );
+            }
             const done = try self.handleControlCharResponse(
                 &control_buf,
                 control_char_buf[0],
@@ -286,7 +294,15 @@ pub const Transport = struct {
             );
             switch (std.posix.errno(rc)) {
                 .SUCCESS => written += @intCast(rc),
-                std.posix.E.AGAIN => break,
+                std.posix.E.AGAIN => {
+                    return errors.wrapCriticalError(
+                        errors.ScrapliError.Transport,
+                        @src(),
+                        self.log,
+                        "telnet.Transport write: eagain on write, short write",
+                        .{},
+                    );
+                },
                 else => |err| {
                     return errors.wrapCriticalError(
                         std.posix.unexpectedErrno(err),
@@ -317,7 +333,14 @@ pub const Transport = struct {
         if (self.initial_buf.items.len > 0) {
             const n = @min(self.initial_buf.items.len, buf.len);
             @memcpy(buf[0..n], self.initial_buf.items[0..n]);
-            _ = self.initial_buf.orderedRemove(n - 1);
+
+            try self.initial_buf.replaceRange(
+                self.allocator,
+                0,
+                n,
+                "",
+            );
+
             return n;
         }
 
