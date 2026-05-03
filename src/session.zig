@@ -420,21 +420,6 @@ pub const Session = struct {
 
         self.read_stop.store(ReadThreadState.stop, std.builtin.AtomicOrder.unordered);
 
-        while (self.read_stop.load(std.builtin.AtomicOrder.acquire) != ReadThreadState.stop) {
-            std.Io.Clock.Duration.sleep(
-                .{
-                    .clock = .awake,
-                    .raw = .fromNanoseconds(self.options.read_min_delay_ns),
-                },
-                self.io,
-            ) catch |err| {
-                self.log.warn(
-                    "session.Session open: sleep error '{}', ignoring",
-                    .{err},
-                );
-            };
-        }
-
         // need to unblock the transport waiter after signaling the read thread to stop, this will
         // stop the waiter (which happens in transport.read), then the readloop can nicely exit
         try self.transport.prepareClose();
