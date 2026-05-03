@@ -230,7 +230,7 @@ pub const Transport = struct {
     ) !void {
         self.log.info("telnet.Transport open requested", .{});
 
-        self.stream = transport_socket.getStream(self.io, host, port) catch {
+        self.stream = transport_socket.getStream(self.io, self.log, host, port) catch {
             return errors.wrapCriticalError(
                 errors.ScrapliError.Transport,
                 @src(),

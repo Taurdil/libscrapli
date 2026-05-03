@@ -1,9 +1,15 @@
 const std = @import("std");
 
 const errors = @import("errors.zig");
+const logging = @import("logging.zig");
 
 /// Get a tcp Stream object for the given host/port.
-pub fn getStream(io: std.Io, host: []const u8, port: u16) !std.Io.net.Stream {
+pub fn getStream(
+    io: std.Io,
+    log: logging.Logger,
+    host: []const u8,
+    port: u16,
+) !std.Io.net.Stream {
     var lookup_buf: [16]std.Io.net.HostName.LookupResult = undefined;
     var lookup_queue = std.Io.Queue(std.Io.net.HostName.LookupResult).init(&lookup_buf);
     var canonical_name_buf: [255]u8 = undefined;
@@ -30,16 +36,14 @@ pub fn getStream(io: std.Io, host: []const u8, port: u16) !std.Io.net.Stream {
                         .protocol = .tcp,
                     },
                 ) catch {
-                    // copying this note from OG scrapli as the same thing is true here
-                    // It seems that very occasionally when resolving a hostname (i.e. localhost during
-                    // functional tests against vrouter devices), a v6 address family will be the first
-                    // af the socket getaddrinfo returns, in this case, because the qemu hostfwd is not
-                    // listening on ::1, instead only listening on 127.0.0.1 the connection will fail.
-                    // Presumably this is something that can happen in real life too... something gets
-                    // resolved with a v6 address but is denying connections or just not listening on
-                    // that ipv6 address. This little connect wrapper is intended to deal with these
-                    //  weird scenarios.
-
+                    log.debug(
+                        "socket: failed connecting to resolved address {any} for host '{s}'," ++
+                            " trying next candidate",
+                        .{
+                            addr.address,
+                            host,
+                        },
+                    );
                     continue;
                 };
 
