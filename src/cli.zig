@@ -737,7 +737,6 @@ pub const Driver = struct {
         try res.record(
             .{
                 .rets = try self.session.readAny(allocator, options),
-                .trim_processed = false,
             },
         );
 
