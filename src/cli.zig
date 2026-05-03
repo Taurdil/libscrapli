@@ -376,9 +376,15 @@ pub const Driver = struct {
             ),
         );
 
+        const current_prompt = std.mem.trim(
+            u8,
+            res.results.items[0],
+            "\t\n\r",
+        );
+
         self.current_mode = mode.determineMode(
             self.definition.modes,
-            res.results.items[0],
+            current_prompt,
         ) catch |err| {
             return errors.wrapCriticalError(
                 err,
@@ -386,8 +392,8 @@ pub const Driver = struct {
                 self.log,
                 "cli.Driver enterMode: failed determining prompt from '{s}' | {X}",
                 .{
-                    res.results.items[0],
-                    res.results.items[0],
+                    current_prompt,
+                    current_prompt,
                 },
             );
         };

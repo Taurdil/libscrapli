@@ -1,6 +1,5 @@
 const std = @import("std");
 
-const bytes = @import("bytes.zig");
 const operation = @import("cli-operation.zig");
 
 /// Holds options related to how a result should look.
@@ -93,23 +92,13 @@ pub const Result = struct {
         data: struct {
             input: []const u8 = "",
             rets: [2][]const u8,
-            trim_processed: bool = true,
         },
     ) !void {
         try self.splits_ns.append(self.allocator, std.Io.Timestamp.now(self.io, .real).nanoseconds);
         try self.inputs.append(self.allocator, data.input);
         try self.results_raw.append(self.allocator, data.rets[0]);
 
-        if (data.trim_processed) {
-            // trimWhitespace allocates new memory properly sized, so we can then free
-            // up the original "processed" buf (it is "processed" becuase ansi/ascii stuff is
-            // removed, but we still trim whitespace to get rid of leading/trailing junk)
-            const trimmed = try bytes.trimNewlineWhitespace(self.allocator, data.rets[1]);
-            self.allocator.free(data.rets[1]);
-            try self.results.append(self.allocator, trimmed);
-        } else {
-            try self.results.append(self.allocator, data.rets[1]);
-        }
+        try self.results.append(self.allocator, data.rets[1]);
 
         if (self.failed_indicators == null) {
             return;
@@ -311,7 +300,12 @@ pub const Result = struct {
         var pending_ws: usize = 0;
 
         for (0.., self.results.items) |idx, result| {
-            for (result) |ch| {
+            const render_result = if (options.normalize_trailing_whitespace)
+                std.mem.trim(u8, result, "\t\n\r")
+            else
+                result;
+
+            for (render_result) |ch| {
                 if (options.normalize_line_feeds and ch == '\r') continue;
 
                 if (options.normalize_trailing_whitespace) {
@@ -385,7 +379,12 @@ fn getJoinedLen(
     var pending_ws: usize = 0;
 
     for (0.., items) |idx, result| {
-        for (result) |ch| {
+        const render_result = if (options.normalize_trailing_whitespace)
+            std.mem.trim(u8, result, "\t\n\r")
+        else
+            result;
+
+        for (render_result) |ch| {
             if (options.normalize_line_feeds and ch == '\r') continue;
 
             if (options.normalize_trailing_whitespace) {
@@ -442,13 +441,13 @@ test "getJoinedLen" {
             // crlf
             .items = &.{ "foo\x0D\x0A", "bar" },
             .options = .{},
-            .expected = 8, // will be 8 because 6 for foo+bar + one for joining + one for replacing the crlf
+            .expected = 7,
         },
         .{
             // crlf
             .items = &.{"\x0D\x0Afoo"},
             .options = .{},
-            .expected = 4, // again, 4 because replaced w/ \n
+            .expected = 3,
         },
         .{
             // trailing space
