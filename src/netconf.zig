@@ -501,8 +501,8 @@ pub const Driver = struct {
             std.builtin.AtomicOrder.unordered,
         );
 
-        if (self.process_thread != null) {
-            self.process_thread.?.join();
+        if (self.process_thread) |t| {
+            t.join();
         }
 
         try self.session.close();
@@ -1683,10 +1683,10 @@ pub const Driver = struct {
             }
         }
 
-        if (options.defaults_type != null) {
+        if (options.defaults_type) |defaults_type| {
             try Driver.addDefaultsElem(
                 &writer,
-                options.defaults_type.?,
+                defaults_type,
             );
         }
 
@@ -2014,10 +2014,10 @@ pub const Driver = struct {
 
         try writer.elementEnd();
 
-        if (options.defaults_type != null) {
+        if (options.defaults_type) |defaults_type| {
             try Driver.addDefaultsElem(
                 &writer,
-                options.defaults_type.?,
+                defaults_type,
             );
         }
 
@@ -2512,26 +2512,26 @@ pub const Driver = struct {
             }
         }
 
-        if (options.max_depth != null) {
+        if (options.max_depth) |max_depth| {
             try writer.elementStart("max-depth");
             var session_id_buf: [20]u8 = undefined;
             try writer.text(try std.fmt.bufPrint(
                 &session_id_buf,
                 "{}",
-                .{options.max_depth.?},
+                .{max_depth},
             ));
             try writer.elementEnd();
         }
 
-        if (options.with_origin != null) {
+        if (options.with_origin) |_| {
             try writer.elementStart("with-origin");
             try writer.elementEnd();
         }
 
-        if (options.defaults_type != null) {
+        if (options.defaults_type) |defaults_type| {
             try Driver.addDefaultsElem(
                 &writer,
-                options.defaults_type.?,
+                defaults_type,
             );
         }
 
