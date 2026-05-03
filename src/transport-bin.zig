@@ -72,20 +72,20 @@ pub const Options = struct {
             o.bin = try o.allocator.dupe(u8, o.bin);
         }
 
-        if (o.extra_open_args != null) {
-            o.extra_open_args = try o.allocator.dupe(u8, o.extra_open_args.?);
+        if (o.extra_open_args) |extra_open_args| {
+            o.extra_open_args = try o.allocator.dupe(u8, extra_open_args);
         }
 
-        if (o.override_open_args != null) {
-            o.override_open_args = try o.allocator.dupe(u8, o.override_open_args.?);
+        if (o.override_open_args) |override_open_args| {
+            o.override_open_args = try o.allocator.dupe(u8, override_open_args);
         }
 
-        if (o.ssh_config_path != null) {
-            o.ssh_config_path = try o.allocator.dupe(u8, o.ssh_config_path.?);
+        if (o.ssh_config_path) |ssh_config_path| {
+            o.ssh_config_path = try o.allocator.dupe(u8, ssh_config_path);
         }
 
-        if (o.known_hosts_path != null) {
-            o.known_hosts_path = try o.allocator.dupe(u8, o.known_hosts_path.?);
+        if (o.known_hosts_path) |known_hosts_path| {
+            o.known_hosts_path = try o.allocator.dupe(u8, known_hosts_path);
         }
 
         return o;
@@ -97,20 +97,20 @@ pub const Options = struct {
             self.allocator.free(self.bin);
         }
 
-        if (self.extra_open_args != null) {
-            self.allocator.free(self.extra_open_args.?);
+        if (self.extra_open_args) |extra_open_args| {
+            self.allocator.free(extra_open_args);
         }
 
-        if (self.override_open_args != null) {
-            self.allocator.free(self.override_open_args.?);
+        if (self.override_open_args) |override_open_args| {
+            self.allocator.free(override_open_args);
         }
 
-        if (self.ssh_config_path != null) {
-            self.allocator.free(self.ssh_config_path.?);
+        if (self.ssh_config_path) |ssh_config_path| {
+            self.allocator.free(ssh_config_path);
         }
 
-        if (self.known_hosts_path != null) {
-            self.allocator.free(self.known_hosts_path.?);
+        if (self.known_hosts_path) |known_hosts_path| {
+            self.allocator.free(known_hosts_path);
         }
 
         self.allocator.destroy(self);
@@ -177,10 +177,10 @@ pub const Transport = struct {
         auth_options: *auth.Options,
         operation_timeout_ns: u64,
     ) !void {
-        if (self.options.override_open_args != null) {
+        if (self.options.override_open_args) |override_open_args| {
             var override_args_iterator = std.mem.splitSequence(
                 u8,
-                self.options.override_open_args.?,
+                override_open_args,
                 " ",
             );
 
@@ -275,7 +275,7 @@ pub const Transport = struct {
             );
         }
 
-        if (auth_options.username != null) {
+        if (auth_options.username) |username| {
             try self.open_args.append(
                 self.allocator,
                 strings.MaybeHeapString{
@@ -288,12 +288,12 @@ pub const Transport = struct {
                 self.allocator,
                 strings.MaybeHeapString{
                     .allocator = null,
-                    .string = auth_options.username.?,
+                    .string = username,
                 },
             );
         }
 
-        if (auth_options.private_key_path != null) {
+        if (auth_options.private_key_path) |private_key_path| {
             try self.open_args.append(
                 self.allocator,
                 strings.MaybeHeapString{
@@ -306,12 +306,12 @@ pub const Transport = struct {
                 self.allocator,
                 strings.MaybeHeapString{
                     .allocator = null,
-                    .string = auth_options.private_key_path.?,
+                    .string = private_key_path,
                 },
             );
         }
 
-        if (self.options.ssh_config_path != null) {
+        if (self.options.ssh_config_path) |ssh_config_path| {
             try self.open_args.append(
                 self.allocator,
                 strings.MaybeHeapString{
@@ -324,7 +324,7 @@ pub const Transport = struct {
                 self.allocator,
                 strings.MaybeHeapString{
                     .allocator = null,
-                    .string = self.options.ssh_config_path.?,
+                    .string = ssh_config_path,
                 },
             );
         }
@@ -372,7 +372,7 @@ pub const Transport = struct {
             );
         }
 
-        if (self.options.known_hosts_path != null) {
+        if (self.options.known_hosts_path) |known_hosts_path| {
             try self.open_args.append(
                 self.allocator,
                 strings.MaybeHeapString{
@@ -388,7 +388,7 @@ pub const Transport = struct {
                     .string = try std.fmt.allocPrint(
                         self.allocator,
                         "UserKnownHostsFile={s}",
-                        .{self.options.known_hosts_path.?},
+                        .{known_hosts_path},
                     ),
                 },
             );

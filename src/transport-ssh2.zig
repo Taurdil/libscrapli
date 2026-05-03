@@ -716,7 +716,9 @@ pub const Transport = struct {
             );
         };
 
-        self.socket = self.stream.?.socket.handle;
+        if (self.stream) |stream| {
+            self.socket = stream.socket.handle;
+        }
     }
 
     fn initSession(
@@ -1471,9 +1473,11 @@ pub const Transport = struct {
         operation_timeout_ns: u64,
         auth_options: *auth.Options,
     ) !void {
+        const proxy_jump_options = self.options.proxy_jump_options.?;
+
         const _host = try self.allocator.dupeSentinel(
             u8,
-            self.options.proxy_jump_options.?.host,
+            proxy_jump_options.host,
             0,
         );
         defer self.allocator.free(_host);
@@ -1502,7 +1506,7 @@ pub const Transport = struct {
             self.initial_channel = libssh2ChannelOpenProxySession(
                 self.initial_session,
                 _host,
-                self.options.proxy_jump_options.?.port,
+                proxy_jump_options.port,
             );
 
             if (self.initial_channel != null) {
@@ -1549,7 +1553,7 @@ pub const Transport = struct {
             );
         }
 
-        if (self.options.proxy_jump_options.?.libssh2_trace) {
+        if (proxy_jump_options.libssh2_trace) {
             _ = ssh2.libssh2_trace(
                 self.proxy_session.?,
                 ssh2.LIBSSH2_TRACE_PUBLICKEY |
@@ -1581,8 +1585,11 @@ pub const Transport = struct {
         try file.setNonBlocking(local_fd);
         try file.setNonBlocking(remote_fd);
 
-        try self.proxy_wrapper.?.run(self.initial_channel.?, remote_fd);
-        errdefer self.proxy_wrapper.?.stop();
+        const proxy_wrapper = self.proxy_wrapper.?;
+        const initial_channel = self.initial_channel.?;
+
+        try proxy_wrapper.run(initial_channel, remote_fd);
+        errdefer proxy_wrapper.stop();
 
         const handshake_rc = ssh2.libssh2_session_handshake(self.proxy_session, local_fd);
         if (handshake_rc != 0) {
@@ -1600,10 +1607,10 @@ pub const Transport = struct {
         const pa = try auth.Options.init(
             self.allocator,
             .{
-                .username = self.options.proxy_jump_options.?.username,
-                .password = self.options.proxy_jump_options.?.password,
-                .private_key_path = self.options.proxy_jump_options.?.private_key_path,
-                .private_key_passphrase = self.options.proxy_jump_options.?.private_key_passphrase,
+                .username = proxy_jump_options.username,
+                .password = proxy_jump_options.password,
+                .private_key_path = proxy_jump_options.private_key_path,
+                .private_key_passphrase = proxy_jump_options.private_key_passphrase,
                 .lookups = auth_options.lookups,
             },
         );

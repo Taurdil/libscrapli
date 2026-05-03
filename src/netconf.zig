@@ -748,17 +748,23 @@ pub const Driver = struct {
             );
         }
 
-        for (self.server_capabilities.?.items) |cap| {
-            if (namespace != null and !std.mem.eql(u8, namespace.?, cap.namespace)) {
-                continue;
+        const server_capabilities = self.server_capabilities.?;
+
+        for (server_capabilities.items) |cap| {
+            if (namespace) |ns| {
+                if (!std.mem.eql(u8, ns, cap.namespace)) {
+                    continue;
+                }
             }
 
             if (!std.mem.eql(u8, name, cap.name)) {
                 continue;
             }
 
-            if (revision != null and !std.mem.eql(u8, revision.?, cap.revision)) {
-                continue;
+            if (revision) |rev| {
+                if (!std.mem.eql(u8, rev, cap.revision)) {
+                    continue;
+                }
             }
 
             return true;
