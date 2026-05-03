@@ -1069,6 +1069,22 @@ pub const Session = struct {
         return match_indexes;
     }
 
+    fn prependLastConsumedPrompt(self: *Session, bufs: *bytes.ProcessedBuf) !void {
+        if (self.last_consumed_prompt.items.len == 0) {
+            return;
+        }
+
+        try bufs.appendSlice(self.last_consumed_prompt.items);
+        try self.last_consumed_prompt.resize(self.allocator, 0);
+    }
+
+    fn storeLastConsumedPrompt(
+        self: *Session,
+        buf: []const u8,
+    ) !void {
+        try self.last_consumed_prompt.appendSlice(self.allocator, buf);
+    }
+
     /// Sends the given input to the transport, reading until the input is written, then sending
     /// return, then reading until the next prompt is read. It returns two buffers -- the "raw"
     /// buffer, that is the unprocessed content that we read from the device, and the "processed"
@@ -1087,12 +1103,7 @@ pub const Session = struct {
         var bufs = bytes.ProcessedBuf.init(allocator);
         defer bufs.deinit();
 
-        if (self.last_consumed_prompt.items.len != 0) {
-            // if we had some prompt consumed, stuff it on the raw and processed buffers and then
-            // re-zeroize
-            try bufs.appendSlice(self.last_consumed_prompt.items);
-            try self.last_consumed_prompt.resize(self.allocator, 0);
-        }
+        try self.prependLastConsumedPrompt(&bufs);
 
         _ = try self.innerSendInput(
             start_time,
@@ -1121,8 +1132,7 @@ pub const Session = struct {
             self.options.operation_max_search_depth,
         );
 
-        try self.last_consumed_prompt.appendSlice(
-            self.allocator,
+        try self.storeLastConsumedPrompt(
             bufs.processed.items[prompt_indexes.start..prompt_indexes.end],
         );
 
@@ -1196,12 +1206,7 @@ pub const Session = struct {
         var bufs = bytes.ProcessedBuf.init(allocator);
         defer bufs.deinit();
 
-        if (self.last_consumed_prompt.items.len != 0) {
-            // if we had some prompt consumed, stuff it on the raw and processed buffers and then
-            // re-zeroize
-            try bufs.appendSlice(self.last_consumed_prompt.items);
-            try self.last_consumed_prompt.resize(self.allocator, 0);
-        }
+        try self.prependLastConsumedPrompt(&bufs);
 
         _ = try self.innerSendInput(
             start_time,
@@ -1257,8 +1262,7 @@ pub const Session = struct {
             self.options.operation_max_search_depth,
         );
 
-        try self.last_consumed_prompt.appendSlice(
-            self.allocator,
+        try self.storeLastConsumedPrompt(
             bufs.processed.items[prompt_indexes.start..prompt_indexes.end],
         );
 
