@@ -394,21 +394,23 @@ pub const Transport = struct {
             );
         }
 
-        if (self.options.extra_open_args != null and self.options.extra_open_args.?.len > 0) {
-            var extra_args_iterator = std.mem.splitSequence(
-                u8,
-                self.options.extra_open_args.?,
-                " ",
-            );
-
-            while (extra_args_iterator.next()) |arg| {
-                try self.open_args.append(
-                    self.allocator,
-                    strings.MaybeHeapString{
-                        .allocator = null,
-                        .string = arg,
-                    },
+        if (self.options.extra_open_args) |extra_open_args| {
+            if (extra_open_args.len > 0) {
+                var extra_args_iterator = std.mem.splitSequence(
+                    u8,
+                    extra_open_args,
+                    " ",
                 );
+
+                while (extra_args_iterator.next()) |arg| {
+                    try self.open_args.append(
+                        self.allocator,
+                        strings.MaybeHeapString{
+                            .allocator = null,
+                            .string = arg,
+                        },
+                    );
+                }
             }
         }
 

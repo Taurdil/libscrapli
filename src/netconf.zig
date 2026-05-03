@@ -1438,11 +1438,13 @@ pub const Driver = struct {
         try writer.elementStartNs(base_capability_name, "filter");
         try writer.attribute("type", @tagName(filter_type));
 
-        if (filter_namespace != null and filter_namespace.?.len > 0) {
-            try writer.bindNs(
-                filter_namespace_prefix orelse "",
-                filter_namespace.?,
-            );
+        if (filter_namespace) |ns| {
+            if (ns.len > 0) {
+                try writer.bindNs(
+                    filter_namespace_prefix orelse "",
+                    ns,
+                );
+            }
         }
 
         if (filter_type == operation.FilterType.xpath) {
@@ -1471,20 +1473,24 @@ pub const Driver = struct {
         if (filter_type == operation.FilterType.subtree) {
             try writer.elementStartNs(base_capability_name, "subtree-filter");
 
-            if (filter_namespace != null and filter_namespace.?.len > 0) {
-                try writer.bindNs(
-                    filter_namespace_prefix orelse "",
-                    filter_namespace.?,
-                );
+            if (filter_namespace) |ns| {
+                if (ns.len > 0) {
+                    try writer.bindNs(
+                        filter_namespace_prefix orelse "",
+                        ns,
+                    );
+                }
             }
         } else {
             try writer.elementStartNs(base_capability_name, "xpath-filter");
 
-            if (filter_namespace != null and filter_namespace.?.len > 0) {
-                try writer.bindNs(
-                    filter_namespace_prefix orelse "",
-                    filter_namespace.?,
-                );
+            if (filter_namespace) |ns| {
+                if (ns.len > 0) {
+                    try writer.bindNs(
+                        filter_namespace_prefix orelse "",
+                        ns,
+                    );
+                }
             }
         }
 
@@ -1665,14 +1671,16 @@ pub const Driver = struct {
         try writer.elementStartNs(base_capability_name, "get-config");
         try Driver.addSourceElem(&writer, @tagName(options.source));
 
-        if (options.filter != null and options.filter.?.len > 0) {
-            try Driver.addFilterElem(
-                &writer,
-                options.filter.?,
-                options.filter_type,
-                options.filter_namespace_prefix,
-                options.filter_namespace,
-            );
+        if (options.filter) |filter| {
+            if (filter.len > 0) {
+                try Driver.addFilterElem(
+                    &writer,
+                    filter,
+                    options.filter_type,
+                    options.filter_namespace_prefix,
+                    options.filter_namespace,
+                );
+            }
         }
 
         if (options.defaults_type != null) {
@@ -1992,14 +2000,16 @@ pub const Driver = struct {
         );
         try writer.elementStartNs(base_capability_name, "get");
 
-        if (options.filter != null and options.filter.?.len > 0) {
-            try Driver.addFilterElem(
-                &writer,
-                options.filter.?,
-                options.filter_type,
-                options.filter_namespace_prefix,
-                options.filter_namespace,
-            );
+        if (options.filter) |filter| {
+            if (filter.len > 0) {
+                try Driver.addFilterElem(
+                    &writer,
+                    filter,
+                    options.filter_type,
+                    options.filter_namespace_prefix,
+                    options.filter_namespace,
+                );
+            }
         }
 
         try writer.elementEnd();
@@ -2401,10 +2411,12 @@ pub const Driver = struct {
         try writer.text(options.identifier);
         try writer.elementEnd();
 
-        if (options.version != null and options.version.?.len > 0) {
-            try writer.elementStartNs(get_schema_capability_name, "version");
-            try writer.text(options.version.?);
-            try writer.elementEnd();
+        if (options.version) |version| {
+            if (version.len > 0) {
+                try writer.elementStartNs(get_schema_capability_name, "version");
+                try writer.text(version);
+                try writer.elementEnd();
+            }
         }
 
         try writer.elementStartNs(get_schema_capability_name, "format");
@@ -2472,14 +2484,16 @@ pub const Driver = struct {
         ));
         try writer.elementEnd();
 
-        if (options.filter != null and options.filter.?.len > 0) {
-            try Driver.addFilterElemExplicitTag(
-                &writer,
-                options.filter.?,
-                options.filter_type,
-                options.filter_namespace_prefix,
-                options.filter_namespace,
-            );
+        if (options.filter) |filter| {
+            if (filter.len > 0) {
+                try Driver.addFilterElemExplicitTag(
+                    &writer,
+                    filter,
+                    options.filter_type,
+                    options.filter_namespace_prefix,
+                    options.filter_namespace,
+                );
+            }
         }
 
         if (options.config_filter) |cf| {
@@ -2492,8 +2506,10 @@ pub const Driver = struct {
             try writer.elementEnd();
         }
 
-        if (options.origin_filters != null and options.origin_filters.?.len > 0) {
-            try writer.embed(options.origin_filters.?);
+        if (options.origin_filters) |origin_filters| {
+            if (origin_filters.len > 0) {
+                try writer.embed(origin_filters);
+            }
         }
 
         if (options.max_depth != null) {
