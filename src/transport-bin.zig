@@ -475,7 +475,9 @@ pub const Transport = struct {
             );
         };
 
-        self.fd = self.f.?.handle;
+        if (self.f) |f| {
+            self.fd = f.handle;
+        }
     }
 
     /// Closes the transport.

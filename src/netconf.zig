@@ -1210,13 +1210,14 @@ pub const Driver = struct {
         var message_start_idx: usize = 0;
 
         while (delimiter_count > 0) {
-            const delimiter_index = std.mem.find(
+            const maybe_delimiter_index = std.mem.find(
                 u8,
                 buf,
                 delimiter_version_1_0,
             );
 
-            const message_view = buf[message_start_idx..delimiter_index.?];
+            const delimiter_index = maybe_delimiter_index.?;
+            const message_view = buf[message_start_idx..delimiter_index];
 
             const owned_raw = try self.allocator.alloc(u8, buf.len);
             @memcpy(owned_raw, buf);
@@ -1227,7 +1228,7 @@ pub const Driver = struct {
             try self.storeMessageOrSubscription(owned_raw, owned_parsed);
 
             delimiter_count -= 1;
-            message_start_idx = delimiter_index.? + delimiter_version_1_0.len + 1;
+            message_start_idx = delimiter_index + delimiter_version_1_0.len + 1;
         }
     }
 

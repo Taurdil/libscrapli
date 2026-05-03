@@ -1133,11 +1133,13 @@ pub const Transport = struct {
             // -16 rc == "file" (bad file path or perms or something)
             // -18 rc == "failed" (key auth not supported)
             // -19 rc == "unverified" (auth failed)
+            const username = auth_options.username.?;
+
             const rc = ssh2.libssh2_userauth_publickey_fromfile_ex(
                 session,
                 // don't need to null terminate because we pass len
-                @ptrCast(@constCast(auth_options.username.?)),
-                @intCast(auth_options.username.?.len),
+                @ptrCast(@constCast(username)),
+                @intCast(username.len),
                 null, // would be public key if not using openssl as libssh2 crypto engine
                 private_key_path_c.ptr,
                 private_key_passphrase_c.ptr,
@@ -1226,10 +1228,12 @@ pub const Transport = struct {
                 );
             }
 
+            const username = auth_options.username.?;
+
             const rc = ssh2.libssh2_userauth_publickey_frommemory(
                 session,
-                @ptrCast(@constCast(auth_options.username.?)),
-                auth_options.username.?.len,
+                @ptrCast(@constCast(username)),
+                username.len,
                 null, // public key data (derived by openssl backend)
                 0,
                 @ptrCast(@constCast(key_content)),
@@ -1311,10 +1315,12 @@ pub const Transport = struct {
                 );
             }
 
+            const username = auth_options.username.?;
+
             const rc = ssh2.libssh2_userauth_keyboard_interactive_ex(
                 session,
-                @ptrCast(@constCast(auth_options.username.?)),
-                @intCast(auth_options.username.?.len),
+                @ptrCast(@constCast(username)),
+                @intCast(username.len),
                 kbdInteractiveCallback,
             );
 
@@ -1352,7 +1358,10 @@ pub const Transport = struct {
     ) !void {
         // note: calling the converted c func instead of zig style due to typing issue similar
         // to -> https://github.com/ziglang/zig/issues/18824
-        const resolved_password = try auth_options.resolveAuthValue(auth_options.password.?);
+        const username = auth_options.username.?;
+        const password = auth_options.password.?;
+
+        const resolved_password = try auth_options.resolveAuthValue(password);
 
         while (true) {
             if (cancel != null and cancel.?.*) {
@@ -1377,8 +1386,8 @@ pub const Transport = struct {
 
             const rc = ssh2.libssh2_userauth_password_ex(
                 session,
-                @ptrCast(@constCast(auth_options.username.?)),
-                @intCast(auth_options.username.?.len),
+                @ptrCast(@constCast(username)),
+                @intCast(username.len),
                 @ptrCast(@constCast(resolved_password)),
                 @intCast(resolved_password.len),
                 null,
