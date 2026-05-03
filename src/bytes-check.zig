@@ -4,7 +4,7 @@ const bytes = @import("bytes.zig");
 const re = @import("re.zig");
 
 /// CheckF defines a check function that can be used with the in bytes check functions.
-pub const CheckF = fn (args: CheckArgs, buf: []u8) anyerror!MatchPositions;
+pub const CheckF = *const fn (args: CheckArgs, buf: []const u8) anyerror!MatchPositions;
 
 /// MatchPositions holds the start and end positions of a match in some parent haystack -- it
 /// includes a conveinence function to return the len of the match.

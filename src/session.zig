@@ -1019,7 +1019,7 @@ pub const Session = struct {
             owned_found_prompt,
         );
 
-        return [2][]const u8{ try bufs.raw.toOwnedSlice(self.allocator), owned_found_prompt };
+        return [2][]const u8{ try bufs.raw.toOwnedSlice(allocator), owned_found_prompt };
     }
 
     fn innerSendInput(
@@ -1226,6 +1226,9 @@ pub const Session = struct {
             &bufs,
         );
 
+        const responseCheckF: bytes_check.CheckF =
+            if (compiled_pattern) |_| &bytes_check.anyPatternInBuf else &bytes_check.exactInBuf;
+
         var check_args = bytes_check.CheckArgs{
             .actual = options.prompt_exact,
         };
@@ -1242,7 +1245,7 @@ pub const Session = struct {
         _ = try self.readTimeout(
             start_time,
             options.cancel,
-            bytes_check.exactInBuf,
+            responseCheckF,
             check_args,
             &bufs,
             self.options.operation_max_search_depth,
@@ -1254,7 +1257,7 @@ pub const Session = struct {
             _ = try self.innerSendInput(
                 start_time,
                 options.cancel,
-                options.input,
+                options.response,
                 options.input_handling,
                 &bufs,
             );
