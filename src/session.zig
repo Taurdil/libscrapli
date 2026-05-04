@@ -530,6 +530,8 @@ pub const Session = struct {
     ) ![2][]const u8 {
         self.log.info("session.Session authenticate requested", .{});
 
+        var cur_read_delay_ns: u64 = self.options.read_min_delay_ns;
+
         var bufs = bytes.ProcessedBuf.init(allocator);
         defer bufs.deinit();
 
@@ -620,7 +622,27 @@ pub const Session = struct {
             };
 
             if (n == 0) {
+                std.Io.Clock.Duration.sleep(
+                    .{
+                        .clock = .awake,
+                        .raw = .fromNanoseconds(cur_read_delay_ns),
+                    },
+                    self.io,
+                ) catch |err| {
+                    self.log.warn(
+                        "session.Session authenticate: sleep error '{}', ignoring",
+                        .{err},
+                    );
+                };
+
+                cur_read_delay_ns = Session.getReadBackoff(
+                    cur_read_delay_ns,
+                    self.options.read_max_delay_ns,
+                );
+
                 continue;
+            } else {
+                cur_read_delay_ns = self.options.read_min_delay_ns;
             }
 
             try bufs.appendSlice(buf[0..n]);
@@ -857,6 +879,19 @@ pub const Session = struct {
             const n = try self.read(buf);
 
             if (n == 0) {
+                std.Io.Clock.Duration.sleep(
+                    .{
+                        .clock = .awake,
+                        .raw = .fromNanoseconds(cur_read_delay_ns),
+                    },
+                    self.io,
+                ) catch |err| {
+                    self.log.warn(
+                        "session.Session readTimeout: sleep error '{}', ignoring",
+                        .{err},
+                    );
+                };
+
                 cur_read_delay_ns = Session.getReadBackoff(
                     cur_read_delay_ns,
                     self.options.read_max_delay_ns,
@@ -906,19 +941,6 @@ pub const Session = struct {
 
                 return match_indexes;
             }
-
-            std.Io.Clock.Duration.sleep(
-                .{
-                    .clock = .awake,
-                    .raw = .fromNanoseconds(cur_read_delay_ns),
-                },
-                self.io,
-            ) catch |err| {
-                self.log.warn(
-                    "session.Session readTimeout: sleep error '{}', ignoring",
-                    .{err},
-                );
-            };
         }
     }
 
