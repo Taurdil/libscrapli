@@ -68,6 +68,8 @@ const Recorder = struct {
 
     fn close(self: *Recorder, io: std.Io) !void {
         if (self.rd) |rd| {
+            defer self.rd = null;
+
             switch (rd) {
                 .f => {
                     // when just given a file path we'll "own" that lifecycle and close/cleanup
@@ -75,6 +77,7 @@ const Recorder = struct {
                     // and especially for tests!); otherwise we'll leave it to the user
                     try self.recorder.?.interface.flush();
                     self.recorder.?.file.close(io);
+                    self.recorder = null;
 
                     try ascii.stripAsciiAndAnsiControlCharsInFile(io, rd.f);
                 },
