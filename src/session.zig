@@ -197,7 +197,9 @@ pub const Session = struct {
         .dynamic,
     ),
     read_thread_errored: std.atomic.Value(bool),
+    read_thread_error: ?anyerror = null,
     read_into_buf: ?[]u8 = null,
+    read_loop_buf: ?[]u8 = null,
 
     recorder_buf: [1024]u8 = [_]u8{0} ** 1024,
     recorder: Recorder,
@@ -248,6 +250,8 @@ pub const Session = struct {
                 .dynamic,
             ).init(allocator),
             .read_thread_errored = std.atomic.Value(bool).init(false),
+            .read_into_buf = try allocator.alloc(u8, options.read_size),
+            .read_loop_buf = try allocator.alloc(u8, options.read_size),
             .recorder = try Recorder.init(io, options.record_destination, &s.recorder_buf),
             .prompt_pattern = prompt_pattern,
             .last_consumed_prompt = .empty,
@@ -330,8 +334,12 @@ pub const Session = struct {
 
         self.last_consumed_prompt.deinit(self.allocator);
 
-        if (self.read_into_buf) |buf| {
-            self.allocator.free(buf);
+        if (self.read_into_buf) |b| {
+            self.allocator.free(b);
+        }
+
+        if (self.read_loop_buf) |b| {
+            self.allocator.free(b);
         }
 
         if (self.compiled_username_pattern != null) {
@@ -437,13 +445,11 @@ pub const Session = struct {
     fn readLoop(self: *Session) !void {
         self.log.info("session.Session read thread started", .{});
 
-        errdefer self.read_thread_errored.store(true, std.builtin.AtomicOrder.release);
-
-        var buf = try self.allocator.alloc(u8, self.options.read_size);
-        defer self.allocator.free(buf);
+        const buf = self.read_loop_buf.?;
 
         while (self.read_stop.load(std.builtin.AtomicOrder.acquire) != ReadThreadState.stop) {
-            const n = self.transport.read(buf) catch {
+            const n = self.transport.read(buf) catch |err| {
+                self.read_thread_error = err;
                 self.read_thread_errored.store(true, std.builtin.AtomicOrder.release);
 
                 return;
@@ -484,6 +490,10 @@ pub const Session = struct {
         {
             // once the read thread is errored out and there is nothing else to
             // read
+            if (self.read_thread_error) |err| {
+                return err;
+            }
+
             return errors.ScrapliError.EOF;
         }
 
@@ -541,11 +551,7 @@ pub const Session = struct {
         var auth_password_prompt_seen_count: u8 = 0;
         var auth_passphrase_prompt_seen_count: u8 = 0;
 
-        if (self.read_into_buf == null) {
-            self.read_into_buf = try self.allocator.alloc(u8, self.options.read_size);
-        }
-
-        const buf = self.read_into_buf.?;
+        const buf = self.read_into_buf orelse return errors.ScrapliError.Session;
 
         // need to unblock the transport waiter after signaling the read thread to stop, this will
         // stop the waiter (which happens in transport.read), then the readloop can nicely exit;
