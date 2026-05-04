@@ -314,26 +314,16 @@ pub const Session = struct {
     pub fn deinit(self: *Session) void {
         logging.traceWithSrc(self.log, @src(), "session.Session deinitializing", .{});
 
-        if (self.read_stop.load(std.builtin.AtomicOrder.acquire) == ReadThreadState.run) {
-            // if for whatever reason (likely because a call to driver.open failed causing a defer
-            // close to *not* trigger) the session didnt get "closed", ensure we do that...
-            // but... we ignore errors here since we want deinit to return void and it really
-            // shouldn't matter if something errors during close
-            // zlint-disable-next-line suppressed-errors
-            self.close() catch |err| {
-                self.log.warn(
-                    "session.Session, deinit: close returned an error '{}', ignoring",
-                    .{err},
-                );
-            };
-        }
-
-        // if close didnt happen and the read thread state was already set to stop, we may have not
-        // shut down the read thread completely, so make sure we do that too
-        if (self.read_thread) |t| {
-            t.join();
-            self.read_thread = null;
-        }
+        // ensure we always call close to tidy up the recorder and transport, even if the session
+        // never reached the "run" state, close is idempotent so its worst case an extra function
+        // call but who cares
+        // zlint-disable-next-line suppressed-errors
+        self.close() catch |err| {
+            self.log.warn(
+                "session.Session, deinit: close returned an error '{}', ignoring",
+                .{err},
+            );
+        };
 
         self.last_consumed_prompt.deinit(self.allocator);
 
@@ -428,6 +418,10 @@ pub const Session = struct {
     /// transport, flushing the recordre, and finally closing the transport object itself.
     pub fn close(self: *Session) !void {
         self.log.info("session.Session close requested", .{});
+
+        if (self.read_stop.load(std.builtin.AtomicOrder.acquire) != ReadThreadState.run) {
+            return;
+        }
 
         self.read_stop.store(ReadThreadState.stop, std.builtin.AtomicOrder.unordered);
 
