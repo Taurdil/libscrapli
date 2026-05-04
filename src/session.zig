@@ -847,11 +847,7 @@ pub const Session = struct {
         // increase the found start/end positions by this value too!
         const op_processed_buf_starting_len = bufs.processed.items.len;
 
-        if (self.read_into_buf == null) {
-            self.read_into_buf = try self.allocator.alloc(u8, self.options.read_size);
-        }
-
-        const buf = self.read_into_buf.?;
+        const buf = self.read_into_buf orelse return errors.ScrapliError.Session;
 
         while (true) {
             if (cancel != null and cancel.?.*) {
