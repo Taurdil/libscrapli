@@ -36,6 +36,11 @@ var threaded: std.Io.Threaded = .init_single_threaded;
 /// The base io object for ffi ops.
 pub const io = threaded.io();
 
+/// Opaque types for use in ffi handles.
+pub const LsOptions = opaque {};
+/// Opaque types for use in ffi handles.
+pub const LsDriver = opaque {};
+
 var segfault_handler_registered: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
 /// The handler to attached to segfault signals when in debug mode.

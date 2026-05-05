@@ -4,6 +4,7 @@ const std = @import("std");
 const cli = @import("cli.zig");
 const errors = @import("errors.zig");
 const ffi_args_to_options = @import("ffi-args-to-cli-options.zig");
+const ffi_common = @import("ffi-common.zig");
 const ffi_driver = @import("ffi-driver.zig");
 const ffi_operations = @import("ffi-operations.zig");
 
@@ -14,10 +15,10 @@ pub const noop = true;
 /// `ntc_template_platform` -- this slice should be pre populated w/ sufficient size (lets say
 /// 256?). while unused in zig, ntc templates platform is useful in python land.
 export fn ls_cli_get_ntc_templates_platform(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     ntc_template_platform: *[]u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     switch (d.real_driver) {
         .cli => |rd| {
@@ -41,10 +42,10 @@ export fn ls_cli_get_ntc_templates_platform(
 /// `genie_platform` -- this slice should be pre populated w/ sufficient size (lets say
 /// 256?). while unused in zig, genie platform/parser is useful in python land.
 export fn ls_cli_get_genie_platform(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     genie_platform: *[]u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     switch (d.real_driver) {
         .cli => |rd| {
@@ -67,11 +68,11 @@ export fn ls_cli_get_genie_platform(
 }
 
 export fn ls_cli_open(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.open() catch |err| {
         // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
@@ -158,11 +159,11 @@ export fn ls_cli_open(
 }
 
 export fn ls_cli_close(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     switch (d.real_driver) {
         .cli => {
@@ -208,7 +209,7 @@ export fn ls_cli_close(
 }
 
 export fn ls_cli_fetch_operation_sizes(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: u32,
     operation_count: *u32,
     operation_input_size: *usize,
@@ -217,7 +218,7 @@ export fn ls_cli_fetch_operation_sizes(
     operation_failure_indicator_size: *usize,
     operation_error_size: *usize,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const ret = d.dequeueOperation(operation_id, false) catch |err| {
         // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
@@ -256,7 +257,7 @@ export fn ls_cli_fetch_operation_sizes(
 }
 
 export fn ls_cli_fetch_operation(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: u32,
     operation_start_time: *u64,
     operation_splits: *[]u64,
@@ -266,7 +267,7 @@ export fn ls_cli_fetch_operation(
     operation_result_failed_indicator: *[]u8,
     operation_error: *[]u8,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const ret = d.dequeueOperation(operation_id, true) catch |err| {
         // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
@@ -328,12 +329,12 @@ export fn ls_cli_fetch_operation(
 }
 
 export fn ls_cli_enter_mode(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     requested_mode: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -366,11 +367,11 @@ export fn ls_cli_enter_mode(
 }
 
 export fn ls_cli_get_prompt(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -402,7 +403,7 @@ export fn ls_cli_get_prompt(
 }
 
 export fn ls_cli_send_input(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     input: [*c]const u8,
@@ -411,7 +412,7 @@ export fn ls_cli_send_input(
     retain_input: bool,
     retain_trailing_prompt: bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.sendInputOptionsFromArgs(
         cancel,
@@ -450,7 +451,7 @@ export fn ls_cli_send_input(
 }
 
 export fn ls_cli_send_inputs(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     // inputs delimited on the libscrapli delim... annoying but simple/dumb
@@ -460,7 +461,7 @@ export fn ls_cli_send_inputs(
     retain_input: bool,
     retain_trailing_prompt: bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.sendInputsOptionsFromArgs(
         cancel,
@@ -499,7 +500,7 @@ export fn ls_cli_send_inputs(
 }
 
 export fn ls_cli_send_prompted_input(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     input: [*c]const u8,
@@ -512,7 +513,7 @@ export fn ls_cli_send_prompted_input(
     hidden_response: bool,
     retain_trailing_prompt: bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.sendPromptedInputOptionsFromArgs(
         cancel,
@@ -555,11 +556,11 @@ export fn ls_cli_send_prompted_input(
 }
 
 export fn ls_cli_read_any(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{

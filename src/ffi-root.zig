@@ -44,11 +44,11 @@ export fn ls_assert_no_leaks() callconv(.c) bool {
     }
 }
 
-export fn ls_alloc_driver_options() callconv(.c) usize {
+export fn ls_alloc_driver_options() callconv(.c) ?*ffi_common.LsOptions {
     const allocator = ffi_common.getAllocator();
 
     const o = allocator.create(ffi_options.FFIOptions) catch {
-        return 0;
+        return null;
     };
 
     o.* = ffi_options.FFIOptions{
@@ -65,26 +65,26 @@ export fn ls_alloc_driver_options() callconv(.c) usize {
         },
     };
 
-    return @intFromPtr(o);
+    return @ptrCast(o);
 }
 
-export fn ls_free_driver_options(options_ptr: usize) callconv(.c) void {
+export fn ls_free_driver_options(options_ptr: *ffi_common.LsOptions) callconv(.c) void {
     const allocator = ffi_common.getAllocator();
 
-    const o: *ffi_options.FFIOptions = @ptrFromInt(options_ptr);
+    const o: *ffi_options.FFIOptions = @ptrCast(@alignCast(options_ptr));
 
     defer allocator.destroy(o);
 }
 
 export fn ls_cli_alloc(
     host: [*c]const u8,
-    options_ptr: usize,
-) callconv(.c) usize {
+    options_ptr: *ffi_common.LsOptions,
+) callconv(.c) ?*ffi_common.LsDriver {
     ffi_common.registerSegfaultHandler();
 
     const allocator = ffi_common.getAllocator();
 
-    const o: *ffi_options.FFIOptions = @ptrFromInt(options_ptr);
+    const o: *ffi_options.FFIOptions = @ptrCast(@alignCast(options_ptr));
 
     const d = ffi_driver.FfiDriver.init(
         allocator,
@@ -92,7 +92,7 @@ export fn ls_cli_alloc(
         std.mem.span(host),
         o.cliConfig(allocator),
     ) catch {
-        return 0;
+        return null;
     };
 
     if (o.cli.normalize_line_feeds) |b| {
@@ -103,18 +103,18 @@ export fn ls_cli_alloc(
         d.cli_get_results_options.normalize_trailing_whitespace = b.*;
     }
 
-    return @intFromPtr(d);
+    return @ptrCast(d);
 }
 
 export fn ls_netconf_alloc(
     host: [*c]const u8,
-    options_ptr: usize,
-) callconv(.c) usize {
+    options_ptr: *ffi_common.LsOptions,
+) callconv(.c) ?*ffi_common.LsDriver {
     ffi_common.registerSegfaultHandler();
 
     const allocator = ffi_common.getAllocator();
 
-    const o: *ffi_options.FFIOptions = @ptrFromInt(options_ptr);
+    const o: *ffi_options.FFIOptions = @ptrCast(@alignCast(options_ptr));
 
     const d = ffi_driver.FfiDriver.initNetconf(
         allocator,
@@ -122,24 +122,24 @@ export fn ls_netconf_alloc(
         std.mem.span(host),
         o.*.netconfConfig(allocator),
     ) catch {
-        return 0;
+        return null;
     };
 
-    return @intFromPtr(d);
+    return @ptrCast(d);
 }
 
 export fn ls_shared_get_poll_fd(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
 ) callconv(.c) u32 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     return @intCast(d.poll_fds[0]);
 }
 
 export fn ls_shared_free(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
 ) callconv(.c) void {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.deinit();
 }
@@ -147,11 +147,11 @@ export fn ls_shared_free(
 /// Reads from the driver's session, bypassing the "driver" itself, use with care. Bypasses the
 /// ffi-driver operation loop entirely.
 export fn ls_session_read(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     buf: *[]u8,
     read_n: *usize,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const s = switch (d.real_driver) {
         .cli => |rd| rd.session,
@@ -170,11 +170,11 @@ export fn ls_session_read(
 /// Writes from the driver's session, bypassing the "driver" itself, use with care. Bypasses the
 /// ffi-driver operation loop entirely.
 export fn ls_session_write(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     buf: [*c]const u8,
     redacted: bool,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const s = switch (d.real_driver) {
         .cli => |rd| rd.session,
@@ -198,11 +198,11 @@ export fn ls_session_write(
 }
 
 export fn ls_session_write_and_return(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     buf: [*c]const u8,
     redacted: bool,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const s = switch (d.real_driver) {
         .cli => |rd| rd.session,
@@ -226,9 +226,9 @@ export fn ls_session_write_and_return(
 }
 
 export fn ls_session_write_return(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const s = switch (d.real_driver) {
         .cli => |rd| rd.session,
@@ -252,10 +252,10 @@ export fn ls_session_write_return(
 }
 
 export fn ls_session_operation_timeout_ns(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     value: u64,
 ) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     switch (d.real_driver) {
         .cli => |rd| {

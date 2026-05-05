@@ -4,6 +4,7 @@ const std = @import("std");
 const ascii = @import("ascii.zig");
 const errors = @import("errors.zig");
 const ffi_args_to_options = @import("ffi-args-to-netconf-options.zig");
+const ffi_common = @import("ffi-common.zig");
 const ffi_driver = @import("ffi-driver.zig");
 const ffi_operations = @import("ffi-operations.zig");
 const result = @import("netconf-result.zig");
@@ -12,11 +13,11 @@ const result = @import("netconf-result.zig");
 pub const noop = true;
 
 export fn ls_netconf_open(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.open() catch |err| {
         // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
@@ -103,12 +104,12 @@ export fn ls_netconf_open(
 }
 
 export fn ls_netconf_close(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     force: bool,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     switch (d.real_driver) {
         .cli => {
@@ -172,7 +173,7 @@ export fn ls_netconf_get_subscription_id(
 }
 
 export fn ls_netconf_fetch_operation_sizes(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: u32,
     operation_input_size: *u64,
     operation_result_raw_size: *u64,
@@ -181,7 +182,7 @@ export fn ls_netconf_fetch_operation_sizes(
     operation_rpc_errors_size: *u64,
     operation_error_size: *u64,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const ret = d.dequeueOperation(operation_id, false) catch |err| {
         // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
@@ -221,7 +222,7 @@ export fn ls_netconf_fetch_operation_sizes(
 }
 
 export fn ls_netconf_fetch_operation(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: u32,
     operation_start_time: *u64,
     operation_end_time: *u64,
@@ -232,7 +233,7 @@ export fn ls_netconf_fetch_operation(
     operation_rpc_errors: *[]u8,
     operation_error: *[]u8,
 ) callconv(.c) u8 {
-    var d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const ret = d.dequeueOperation(
         operation_id,
@@ -317,10 +318,10 @@ export fn ls_netconf_fetch_operation(
 }
 
 export fn ls_netconf_get_session_id(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     session_id: *u64,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     if (d.real_driver.netconf.session_id) |s| {
         session_id.* = s;
@@ -332,10 +333,10 @@ export fn ls_netconf_get_session_id(
 }
 
 export fn ls_netconf_next_notification_message_size(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     size: *u64,
 ) callconv(.c) void {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.real_driver.netconf.notifications_lock.lock(d.io) catch {
         return;
@@ -348,10 +349,10 @@ export fn ls_netconf_next_notification_message_size(
 }
 
 export fn ls_netconf_next_notification_message(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     notification: *[]u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.real_driver.netconf.notifications_lock.lock(d.io) catch {
         return 1;
@@ -374,11 +375,11 @@ export fn ls_netconf_next_notification_message(
 }
 
 export fn ls_netconf_next_subscription_message_size(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     subscription_id: u64,
     size: *u64,
 ) callconv(.c) void {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.real_driver.netconf.subscriptions_lock.lock(d.io) catch {
         // this *shouldnt* happen... but if we cant get the lock just return i guess since we have
@@ -398,11 +399,11 @@ export fn ls_netconf_next_subscription_message_size(
 }
 
 export fn ls_netconf_next_subscription_message(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     subscription_id: u64,
     subscription: *[]u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     d.real_driver.netconf.subscriptions_lock.lock(d.io) catch {
         return 1;
@@ -427,14 +428,14 @@ export fn ls_netconf_next_subscription_message(
 }
 
 export fn ls_netconf_raw_rpc(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     payload: [*c]const u8,
     base_namespace_prefix: [*c]const u8,
     extra_namespaces: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -469,7 +470,7 @@ export fn ls_netconf_raw_rpc(
 }
 
 export fn ls_netconf_get_config(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     source: [*c]const u8,
@@ -479,7 +480,7 @@ export fn ls_netconf_get_config(
     filter_namespace: [*c]const u8,
     defaults_type: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.getConfigOptionsFromArgs(
         cancel,
@@ -519,7 +520,7 @@ export fn ls_netconf_get_config(
 }
 
 export fn ls_netconf_edit_config(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     config: [*c]const u8,
@@ -528,7 +529,7 @@ export fn ls_netconf_edit_config(
     test_option: [*c]const u8,
     error_option: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.editConfigOptionsFromArgs(
         cancel,
@@ -567,13 +568,13 @@ export fn ls_netconf_edit_config(
 }
 
 export fn ls_netconf_copy_config(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     target: [*c]const u8,
     source: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.copyConfigOptionsFromArgs(
         cancel,
@@ -609,12 +610,12 @@ export fn ls_netconf_copy_config(
 }
 
 export fn ls_netconf_delete_config(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     target: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.deleteConfigOptionsFromArgs(
         cancel,
@@ -649,12 +650,12 @@ export fn ls_netconf_delete_config(
 }
 
 export fn ls_netconf_lock(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     target: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.lockUnlockOptionsFromArgs(
         cancel,
@@ -689,12 +690,12 @@ export fn ls_netconf_lock(
 }
 
 export fn ls_netconf_unlock(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     target: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.lockUnlockOptionsFromArgs(
         cancel,
@@ -729,7 +730,7 @@ export fn ls_netconf_unlock(
 }
 
 export fn ls_netconf_get(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     filter: [*c]const u8,
@@ -738,7 +739,7 @@ export fn ls_netconf_get(
     filter_namespace: [*c]const u8,
     defaults_type: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.getOptionsFromArgs(
         cancel,
@@ -777,11 +778,11 @@ export fn ls_netconf_get(
 }
 
 export fn ls_netconf_close_session(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -813,12 +814,12 @@ export fn ls_netconf_close_session(
 }
 
 export fn ls_netconf_kill_session(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     session_id: u64,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -851,11 +852,11 @@ export fn ls_netconf_kill_session(
 }
 
 export fn ls_netconf_commit(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -887,11 +888,11 @@ export fn ls_netconf_commit(
 }
 
 export fn ls_netconf_discard(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -923,12 +924,12 @@ export fn ls_netconf_discard(
 }
 
 export fn ls_netconf_cancel_commit(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     persist_id: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -961,12 +962,12 @@ export fn ls_netconf_cancel_commit(
 }
 
 export fn ls_netconf_validate(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     source: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -999,14 +1000,14 @@ export fn ls_netconf_validate(
 }
 
 export fn ls_netconf_get_schema(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     identifier: [*c]const u8,
     version: [*c]const u8,
     format: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -1041,7 +1042,7 @@ export fn ls_netconf_get_schema(
 }
 
 export fn ls_netconf_get_data(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     datastore: [*c]const u8,
@@ -1055,7 +1056,7 @@ export fn ls_netconf_get_data(
     with_origin: bool,
     defaults_type: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -1097,14 +1098,14 @@ export fn ls_netconf_get_data(
 }
 
 export fn ls_netconf_edit_data(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     datastore: [*c]const u8,
     edit_content: [*c]const u8,
     default_operation: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
@@ -1139,12 +1140,12 @@ export fn ls_netconf_edit_data(
 }
 
 export fn ls_netconf_action(
-    d_ptr: usize,
+    d_ptr: *ffi_common.LsDriver,
     operation_id: *u32,
     cancel: *bool,
     action: [*c]const u8,
 ) callconv(.c) u8 {
-    const d: *ffi_driver.FfiDriver = @ptrFromInt(d_ptr);
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
         ffi_operations.OperationOptions{
