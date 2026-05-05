@@ -554,8 +554,13 @@ pub const Transport = struct {
         }
 
         const t = try allocator.create(Transport);
+        errdefer allocator.destroy(t);
+
         const a = try allocator.create(AuthCallbackData);
+        errdefer allocator.destroy(a);
+
         const pa = try allocator.create(AuthCallbackData);
+        errdefer allocator.destroy(pa);
 
         a.* = AuthCallbackData{};
         pa.* = AuthCallbackData{};

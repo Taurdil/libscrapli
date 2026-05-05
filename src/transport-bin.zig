@@ -143,6 +143,7 @@ pub const Transport = struct {
         logging.traceWithSrc(log, @src(), "bin.Transport initializing", .{});
 
         const t = try allocator.create(Transport);
+        errdefer allocator.destroy(t);
 
         t.* = Transport{
             .allocator = allocator,

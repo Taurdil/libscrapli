@@ -79,6 +79,7 @@ pub const Transport = struct {
         logging.traceWithSrc(log, @src(), "telnet.Transport initializing", .{});
 
         const t = try allocator.create(Transport);
+        errdefer allocator.destroy(t);
 
         t.* = Transport{
             .allocator = allocator,
