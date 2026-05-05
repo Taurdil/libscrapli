@@ -158,13 +158,22 @@ export fn ls_session_read(
         .netconf => |rd| rd.session,
     };
 
-    const n = s.read(buf.*) catch {
-        return 1;
+    const n = s.read(buf.*) catch |err| {
+        // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
+        errors.wrapCriticalError(
+            errors.ScrapliError.Operation,
+            @src(),
+            d.getLogger(),
+            "ffi: error during session read {any}",
+            .{err},
+        ) catch {};
+
+        return ffi_common.toFfiResult(err);
     };
 
     read_n.* = n;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 /// Writes from the driver's session, bypassing the "driver" itself, use with care. Bypasses the
@@ -191,10 +200,10 @@ export fn ls_session_write(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_session_write_and_return(
@@ -219,10 +228,10 @@ export fn ls_session_write_and_return(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_session_write_return(
@@ -245,10 +254,10 @@ export fn ls_session_write_return(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_session_operation_timeout_ns(
@@ -266,5 +275,5 @@ export fn ls_session_operation_timeout_ns(
         },
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }

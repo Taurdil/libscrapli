@@ -4,6 +4,8 @@ const builtin = @import("builtin");
 
 const c = @import("c");
 
+const errors = @import("errors.zig");
+
 const libscrapli_ffi_debug_mode_env_var = "LIBSCRAPLI_DEBUG";
 
 /// The base debug allocator for ffi operations.
@@ -65,4 +67,36 @@ pub fn registerSegfaultHandler() void {
     }
 
     _ = c.signal(c.SIGSEGV, segfaultHandler);
+}
+
+/// Represents stable error codes for FFI consumers.
+pub const FfiResult = enum(u8) {
+    success = 0,
+    unknown = 1,
+    out_of_memory = 2,
+    eof = 3,
+    cancelled = 4,
+    timeout = 5,
+    driver = 6,
+    session = 7,
+    transport = 8,
+    operation = 9,
+    invalid_argument = 10,
+};
+
+/// Maps a Zig error to a stable FFI result code.
+pub fn toFfiResult(err: anyerror) u8 {
+    const out = switch (err) {
+        error.OutOfMemory => FfiResult.out_of_memory,
+        errors.ScrapliError.EOF => FfiResult.eof,
+        errors.ScrapliError.Cancelled => FfiResult.cancelled,
+        errors.ScrapliError.TimeoutExceeded => FfiResult.timeout,
+        errors.ScrapliError.Driver => FfiResult.driver,
+        errors.ScrapliError.Session => FfiResult.session,
+        errors.ScrapliError.Transport => FfiResult.transport,
+        errors.ScrapliError.Operation => FfiResult.operation,
+        else => FfiResult.unknown,
+    };
+
+    return @intFromEnum(out);
 }

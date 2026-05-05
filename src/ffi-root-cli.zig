@@ -23,17 +23,17 @@ export fn ls_cli_get_ntc_templates_platform(
     switch (d.real_driver) {
         .cli => |rd| {
             if (rd.definition.ntc_templates_platform == null) {
-                return 0;
+                return @intFromEnum(ffi_common.FfiResult.success);
             }
 
             for (0.., rd.definition.ntc_templates_platform.?) |idx, char| {
                 ntc_template_platform.*[idx] = char;
             }
 
-            return 0;
+            return @intFromEnum(ffi_common.FfiResult.success);
         },
         else => {
-            return 1;
+            return @intFromEnum(ffi_common.FfiResult.invalid_argument);
         },
     }
 }
@@ -50,21 +50,19 @@ export fn ls_cli_get_genie_platform(
     switch (d.real_driver) {
         .cli => |rd| {
             if (rd.definition.genie_platform == null) {
-                return 0;
+                return @intFromEnum(ffi_common.FfiResult.success);
             }
 
             for (0.., rd.definition.genie_platform.?) |idx, char| {
                 genie_platform.*[idx] = char;
             }
 
-            return 0;
+            return @intFromEnum(ffi_common.FfiResult.success);
         },
         else => {
-            return 1;
+            return @intFromEnum(ffi_common.FfiResult.invalid_argument);
         },
     }
-
-    return 0;
 }
 
 export fn ls_cli_open(
@@ -84,7 +82,7 @@ export fn ls_cli_open(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     switch (d.real_driver) {
@@ -110,7 +108,7 @@ export fn ls_cli_open(
                     .{err},
                 ) catch {};
 
-                return 1;
+                return ffi_common.toFfiResult(err);
             };
         },
         .netconf => {
@@ -123,7 +121,7 @@ export fn ls_cli_open(
                 .{},
             ) catch {};
 
-            return 1;
+            return @intFromEnum(ffi_common.FfiResult.invalid_argument);
         },
     }
 
@@ -131,8 +129,8 @@ export fn ls_cli_open(
         // weve already waited for the operation loop to start in the queue operation function,
         // but we also need to ensure we wait for the open operation to actually get put into
         // the queue before continuing
-        d.operation_lock.lock(d.io) catch {
-            return 1;
+        d.operation_lock.lock(d.io) catch |err| {
+            return ffi_common.toFfiResult(err);
         };
         defer d.operation_lock.unlock(d.io);
 
@@ -155,7 +153,7 @@ export fn ls_cli_open(
         };
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_close(
@@ -188,7 +186,7 @@ export fn ls_cli_close(
                     .{err},
                 ) catch {};
 
-                return 1;
+                return ffi_common.toFfiResult(err);
             };
         },
         .netconf => {
@@ -201,11 +199,11 @@ export fn ls_cli_close(
                 .{},
             ) catch {};
 
-            return 1;
+            return @intFromEnum(ffi_common.FfiResult.invalid_argument);
         },
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_fetch_operation_sizes(
@@ -230,7 +228,7 @@ export fn ls_cli_fetch_operation_sizes(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     if (ret.err != null) {
@@ -253,7 +251,7 @@ export fn ls_cli_fetch_operation_sizes(
         operation_error_size.* = 0;
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_fetch_operation(
@@ -279,7 +277,7 @@ export fn ls_cli_fetch_operation(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     defer {
@@ -321,11 +319,11 @@ export fn ls_cli_fetch_operation(
                 .{err},
             ) catch {};
 
-            return 1;
+            return ffi_common.toFfiResult(err);
         };
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_enter_mode(
@@ -358,12 +356,12 @@ export fn ls_cli_enter_mode(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_get_prompt(
@@ -394,12 +392,12 @@ export fn ls_cli_get_prompt(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_send_input(
@@ -442,12 +440,12 @@ export fn ls_cli_send_input(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_send_inputs(
@@ -491,12 +489,12 @@ export fn ls_cli_send_inputs(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_send_prompted_input(
@@ -547,12 +545,12 @@ export fn ls_cli_send_prompted_input(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_read_any(
@@ -583,12 +581,12 @@ export fn ls_cli_read_any(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_cli_read_callback_should_execute(
@@ -613,8 +611,8 @@ export fn ls_cli_read_callback_should_execute(
         // over ffi), so yea... w/e this is zero allocation operation so just pass empty arraylist
         false,
         &triggered_callbacks,
-    ) catch {
-        return 1;
+    ) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
 
     if (should_execute) {
@@ -623,5 +621,5 @@ export fn ls_cli_read_callback_should_execute(
         execute.* = false;
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }

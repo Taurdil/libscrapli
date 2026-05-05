@@ -29,7 +29,7 @@ export fn ls_netconf_open(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     switch (d.real_driver) {
@@ -67,7 +67,7 @@ export fn ls_netconf_open(
                     .{err},
                 ) catch {};
 
-                return 1;
+                return ffi_common.toFfiResult(err);
             };
         },
     }
@@ -100,7 +100,7 @@ export fn ls_netconf_open(
         };
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_close(
@@ -122,7 +122,7 @@ export fn ls_netconf_close(
                 .{},
             ) catch {};
 
-            return 1;
+            return @intFromEnum(ffi_common.FfiResult.invalid_argument);
         },
         .netconf => {
             operation_id.* = d.queueOperation(
@@ -147,12 +147,12 @@ export fn ls_netconf_close(
                     .{err},
                 ) catch {};
 
-                return 1;
+                return ffi_common.toFfiResult(err);
             };
         },
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_get_subscription_id(
@@ -166,7 +166,7 @@ export fn ls_netconf_get_subscription_id(
     if (maybe_subscription_id) |id| {
         subscription_id.* = id;
 
-        return 0;
+        return @intFromEnum(ffi_common.FfiResult.success);
     }
 
     return 1;
@@ -194,7 +194,7 @@ export fn ls_netconf_fetch_operation_sizes(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     if (ret.err != null) {
@@ -218,7 +218,7 @@ export fn ls_netconf_fetch_operation_sizes(
         }
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_fetch_operation(
@@ -248,7 +248,7 @@ export fn ls_netconf_fetch_operation(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     defer {
@@ -314,7 +314,7 @@ export fn ls_netconf_fetch_operation(
         }
     }
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_get_session_id(
@@ -326,7 +326,7 @@ export fn ls_netconf_get_session_id(
     if (d.real_driver.netconf.session_id) |s| {
         session_id.* = s;
 
-        return 0;
+        return @intFromEnum(ffi_common.FfiResult.success);
     }
 
     return 1;
@@ -371,7 +371,7 @@ export fn ls_netconf_next_notification_message(
 
     d.real_driver.netconf.allocator.free(notif);
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_next_subscription_message_size(
@@ -424,7 +424,7 @@ export fn ls_netconf_next_subscription_message(
 
     d.real_driver.netconf.allocator.free(sub);
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_raw_rpc(
@@ -461,12 +461,12 @@ export fn ls_netconf_raw_rpc(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_get_config(
@@ -511,12 +511,12 @@ export fn ls_netconf_get_config(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_edit_config(
@@ -559,12 +559,12 @@ export fn ls_netconf_edit_config(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_copy_config(
@@ -601,12 +601,12 @@ export fn ls_netconf_copy_config(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_delete_config(
@@ -641,12 +641,12 @@ export fn ls_netconf_delete_config(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_lock(
@@ -681,12 +681,12 @@ export fn ls_netconf_lock(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_unlock(
@@ -721,12 +721,12 @@ export fn ls_netconf_unlock(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_get(
@@ -769,12 +769,12 @@ export fn ls_netconf_get(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_close_session(
@@ -805,12 +805,12 @@ export fn ls_netconf_close_session(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_kill_session(
@@ -843,12 +843,12 @@ export fn ls_netconf_kill_session(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_commit(
@@ -879,12 +879,12 @@ export fn ls_netconf_commit(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_discard(
@@ -915,12 +915,12 @@ export fn ls_netconf_discard(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_cancel_commit(
@@ -953,12 +953,12 @@ export fn ls_netconf_cancel_commit(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_validate(
@@ -991,12 +991,12 @@ export fn ls_netconf_validate(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_get_schema(
@@ -1033,12 +1033,12 @@ export fn ls_netconf_get_schema(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_get_data(
@@ -1089,12 +1089,12 @@ export fn ls_netconf_get_data(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_edit_data(
@@ -1131,12 +1131,12 @@ export fn ls_netconf_edit_data(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_action(
@@ -1169,10 +1169,10 @@ export fn ls_netconf_action(
             .{err},
         ) catch {};
 
-        return 1;
+        return ffi_common.toFfiResult(err);
     };
 
     operation_id.* = _operation_id;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
