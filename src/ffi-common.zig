@@ -36,6 +36,8 @@ var threaded: std.Io.Threaded = .init_single_threaded;
 /// The base io object for ffi ops.
 pub const io = threaded.io();
 
+var segfault_handler_registered: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
+
 /// The handler to attached to segfault signals when in debug mode.
 pub fn segfaultHandler(_: c_int) callconv(.c) void {
     std.debug.dumpCurrentStackTrace(
@@ -45,4 +47,17 @@ pub fn segfaultHandler(_: c_int) callconv(.c) void {
     );
 
     std.process.exit(1);
+}
+
+/// Registers the segfault handler if in debug mode and not already registered.
+pub fn registerSegfaultHandler() void {
+    if (!isDebugMode()) {
+        return;
+    }
+
+    if (segfault_handler_registered.swap(true, .acquire)) {
+        return;
+    }
+
+    _ = c.signal(c.SIGSEGV, segfaultHandler);
 }

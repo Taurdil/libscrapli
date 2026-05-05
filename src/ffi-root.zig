@@ -1,8 +1,6 @@
 // zlint-disable suppressed-errors
 const std = @import("std");
 
-const c = @import("c");
-
 const errors = @import("errors.zig");
 const ffi_common = @import("ffi-common.zig");
 const ffi_driver = @import("ffi-driver.zig");
@@ -82,9 +80,7 @@ export fn ls_cli_alloc(
     host: [*c]const u8,
     options_ptr: usize,
 ) callconv(.c) usize {
-    if (ffi_common.isDebugMode()) {
-        _ = c.signal(c.SIGSEGV, ffi_common.segfaultHandler);
-    }
+    ffi_common.registerSegfaultHandler();
 
     const allocator = ffi_common.getAllocator();
 
@@ -114,9 +110,7 @@ export fn ls_netconf_alloc(
     host: [*c]const u8,
     options_ptr: usize,
 ) callconv(.c) usize {
-    if (ffi_common.isDebugMode()) {
-        _ = c.signal(c.SIGSEGV, ffi_common.segfaultHandler);
-    }
+    ffi_common.registerSegfaultHandler();
 
     const allocator = ffi_common.getAllocator();
 
