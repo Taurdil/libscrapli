@@ -921,7 +921,7 @@ pub const Session = struct {
 
             if (!(match_indexes.start == 0 and match_indexes.end == 0)) {
                 match_indexes.start += (bufs.processed.items.len - searchable_buf.len);
-                match_indexes.end += (bufs.processed.items.len - searchable_buf.len) + 1;
+                match_indexes.end += (bufs.processed.items.len - searchable_buf.len);
 
                 self.log.debug(
                     "session.Session readTimeout: found check match in " ++
