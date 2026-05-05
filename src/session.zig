@@ -226,7 +226,7 @@ pub const Session = struct {
         auth_options: *auth.Options,
         transport_options: *transport.Options,
     ) !*Session {
-        logging.traceWithSrc(log, @src(), "session.Session initializing", .{});
+        logging.traceWithSrc(log, @src(), "session.Session init requested", .{});
 
         const t = try transport.Transport.init(
             allocator,
@@ -312,7 +312,7 @@ pub const Session = struct {
 
     /// Deinitializes the session object.
     pub fn deinit(self: *Session) void {
-        logging.traceWithSrc(self.log, @src(), "session.Session deinitializing", .{});
+        logging.traceWithSrc(self.log, @src(), "session.Session deinit requested", .{});
 
         // ensure we always call close to tidy up the recorder and transport, even if the session
         // never reached the "run" state, close is idempotent so its worst case an extra function
@@ -320,7 +320,7 @@ pub const Session = struct {
         // zlint-disable-next-line suppressed-errors
         self.close() catch |err| {
             self.log.warn(
-                "session.Session, deinit: close returned an error '{}', ignoring",
+                "session.Session deinit: close returned an error '{}', ignoring",
                 .{err},
             );
         };
@@ -415,7 +415,7 @@ pub const Session = struct {
     }
 
     /// Closes the session, stopping the read thread, unblocking any in flight reads of the
-    /// transport, flushing the recordre, and finally closing the transport object itself.
+    /// transport, flushing the recorder, and finally closing the transport object itself.
     pub fn close(self: *Session) !void {
         self.log.info("session.Session close requested", .{});
 
