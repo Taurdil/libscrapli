@@ -43,7 +43,7 @@ export fn ls_netconf_open(
                 .{},
             ) catch {};
 
-            return 1;
+            return @intFromEnum(ffi_common.FfiResult.invalid_argument);
         },
         .netconf => {
             operation_id.* = d.queueOperation(
@@ -76,8 +76,8 @@ export fn ls_netconf_open(
         // weve already waited for the operation loop to start in the queue operation function,
         // but we also need to ensure we wait for the open operation to actually get put into
         // the queue before continuing
-        d.operation_lock.lock(d.io) catch {
-            return 1;
+        d.operation_lock.lock(d.io) catch |err| {
+            return ffi_common.toFfiResult(err);
         };
         defer d.operation_lock.unlock(d.io);
 
@@ -159,8 +159,8 @@ export fn ls_netconf_get_subscription_id(
     operation_result: [*c]const u8,
     subscription_id: *u64,
 ) callconv(.c) u8 {
-    const maybe_subscription_id = result.getSubscriptionId(std.mem.span(operation_result)) catch {
-        return 1;
+    const maybe_subscription_id = result.getSubscriptionId(std.mem.span(operation_result)) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
 
     if (maybe_subscription_id) |id| {
@@ -169,7 +169,7 @@ export fn ls_netconf_get_subscription_id(
         return @intFromEnum(ffi_common.FfiResult.success);
     }
 
-    return 1;
+    return @intFromEnum(ffi_common.FfiResult.operation);
 }
 
 export fn ls_netconf_fetch_operation_sizes(
@@ -351,23 +351,25 @@ export fn ls_netconf_get_session_id(
         return @intFromEnum(ffi_common.FfiResult.success);
     }
 
-    return 1;
+    return @intFromEnum(ffi_common.FfiResult.operation);
 }
 
 export fn ls_netconf_next_notification_message_size(
     d_ptr: *ffi_common.LsDriver,
     size: *u64,
-) callconv(.c) void {
+) callconv(.c) u8 {
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
-    d.real_driver.netconf.notifications_lock.lock(d.io) catch {
-        return;
+    d.real_driver.netconf.notifications_lock.lock(d.io) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
     defer d.real_driver.netconf.notifications_lock.unlock(d.io);
 
     if (d.real_driver.netconf.notifications.items.len > 0) {
         size.* = d.real_driver.netconf.notifications.items[0].len;
     }
+
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_next_notification_message(
@@ -376,15 +378,15 @@ export fn ls_netconf_next_notification_message(
 ) callconv(.c) u8 {
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
-    d.real_driver.netconf.notifications_lock.lock(d.io) catch {
-        return 1;
+    d.real_driver.netconf.notifications_lock.lock(d.io) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
     defer d.real_driver.netconf.notifications_lock.unlock(d.io);
 
     if (d.real_driver.netconf.notifications.items.len == 0) {
         // an error because they shoulda peeked at sizes first
         // to know there was something to read
-        return 1;
+        return @intFromEnum(ffi_common.FfiResult.operation);
     }
 
     const notif = d.real_driver.netconf.notifications.orderedRemove(0);
@@ -400,24 +402,23 @@ export fn ls_netconf_next_subscription_message_size(
     d_ptr: *ffi_common.LsDriver,
     subscription_id: u64,
     size: *u64,
-) callconv(.c) void {
+) callconv(.c) u8 {
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
-    d.real_driver.netconf.subscriptions_lock.lock(d.io) catch {
-        // this *shouldnt* happen... but if we cant get the lock just return i guess since we have
-        // no easy way to signal erroring here (we could ofc add a return value etc etc, but it
-        // seems like this should really never be an issue)
-        return;
+    d.real_driver.netconf.subscriptions_lock.lock(d.io) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
     defer d.real_driver.netconf.subscriptions_lock.unlock(d.io);
 
     if (d.real_driver.netconf.subscriptions.getPtr(subscription_id)) |sub| {
         if (sub.items.len == 0) {
-            return;
+            return @intFromEnum(ffi_common.FfiResult.success);
         }
 
         size.* = sub.items[0].len;
     }
+
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_netconf_next_subscription_message(
@@ -427,8 +428,8 @@ export fn ls_netconf_next_subscription_message(
 ) callconv(.c) u8 {
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
-    d.real_driver.netconf.subscriptions_lock.lock(d.io) catch {
-        return 1;
+    d.real_driver.netconf.subscriptions_lock.lock(d.io) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
     defer d.real_driver.netconf.subscriptions_lock.unlock(d.io);
 
@@ -437,7 +438,7 @@ export fn ls_netconf_next_subscription_message(
     if (subs == null or subs.?.items.len == 0) {
         // an error because they shoulda peeked at sizes first
         // to know there was something to read
-        return 1;
+        return @intFromEnum(ffi_common.FfiResult.operation);
     }
 
     const sub = subs.?.orderedRemove(0);
