@@ -239,7 +239,18 @@ export fn ls_cli_fetch_operation_sizes(
     } else {
         const dret = switch (ret.result) {
             .cli => |r| r.?,
-            else => @panic("ffi: attempting to access non cli result from cli type"),
+            else => {
+                // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
+                errors.wrapCriticalError(
+                    errors.ScrapliError.Operation,
+                    @src(),
+                    d.getLogger(),
+                    "ffi: attempting to access non cli result from cli driver",
+                    .{},
+                ) catch {};
+
+                return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+            },
         };
 
         const sizes = d.getCliResultLens(dret);
@@ -297,7 +308,18 @@ export fn ls_cli_fetch_operation(
     } else {
         const dret = switch (ret.result) {
             .cli => |r| r.?,
-            else => @panic("ffi: attempting to access non cli result from cli type"),
+            else => {
+                // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
+                errors.wrapCriticalError(
+                    errors.ScrapliError.Operation,
+                    @src(),
+                    d.getLogger(),
+                    "ffi: attempting to access non cli result from cli driver",
+                    .{},
+                ) catch {};
+
+                return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+            },
         };
 
         d.getCliResults(

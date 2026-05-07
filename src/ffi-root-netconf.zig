@@ -205,7 +205,18 @@ export fn ls_netconf_fetch_operation_sizes(
     } else {
         const dret = switch (ret.result) {
             .netconf => |r| r.?,
-            else => @panic("attempting to access non netconf result from netconf type"),
+            else => {
+                // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
+                errors.wrapCriticalError(
+                    errors.ScrapliError.Operation,
+                    @src(),
+                    d.getLogger(),
+                    "ffi: attempting to access non netconf result from netconf driver",
+                    .{},
+                ) catch {};
+
+                return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+            },
         };
 
         operation_input_size.* = dret.input.len;
@@ -268,7 +279,18 @@ export fn ls_netconf_fetch_operation(
     } else {
         const dret = switch (ret.result) {
             .netconf => |r| r.?,
-            else => @panic("attempting to access non netconf result from netconf type"),
+            else => {
+                // zlinter-disable-next-line no_swallow_error - returning status code for ffi ops
+                errors.wrapCriticalError(
+                    errors.ScrapliError.Operation,
+                    @src(),
+                    d.getLogger(),
+                    "ffi: attempting to access non netconf result from netconf driver",
+                    .{},
+                ) catch {};
+
+                return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+            },
         };
 
         operation_start_time.* = @intCast(dret.start_time_ns);

@@ -334,11 +334,7 @@ pub const FfiDriver = struct {
 
             const rd = switch (self.real_driver) {
                 .cli => |d| d,
-                else => {
-                    @panic(
-                        "ffi-driver.FfiDriver: cli operation loop executed, but driver is not cli",
-                    );
-                },
+                else => unreachable,
             };
 
             switch (op.?.operation.cli) {
@@ -501,12 +497,7 @@ pub const FfiDriver = struct {
 
             const rd = switch (self.real_driver) {
                 .netconf => |d| d,
-                else => {
-                    @panic(
-                        "ffi-driver.FfiDriver: netconf operation loop executed, " ++
-                            "but driver is not netconf",
-                    );
-                },
+                else => unreachable,
             };
 
             switch (op.?.operation.netconf) {
