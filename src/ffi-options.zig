@@ -446,15 +446,15 @@ export fn ls_fetch_options_size(
 
     const allocator = ffi_common.getAllocator();
 
-    const opt_string = ffiOptionsToJSON(allocator, o) catch {
-        return 1;
+    const opt_string = ffiOptionsToJSON(allocator, o) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
 
     defer allocator.free(opt_string);
 
     options_json_len.* = opt_string.len;
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 export fn ls_fetch_options(
@@ -465,15 +465,15 @@ export fn ls_fetch_options(
 
     const allocator = ffi_common.getAllocator();
 
-    const opt_string = ffiOptionsToJSON(allocator, o) catch {
-        return 1;
+    const opt_string = ffiOptionsToJSON(allocator, o) catch |err| {
+        return ffi_common.toFfiResult(err);
     };
 
     defer allocator.free(opt_string);
 
     @memcpy(options_json.*[0..], opt_string);
 
-    return 0;
+    return @intFromEnum(ffi_common.FfiResult.success);
 }
 
 fn optU16(val: ?*const u16) ?u16 {
