@@ -354,6 +354,10 @@ export fn ls_cli_enter_mode(
     cancel: *bool,
     requested_mode: [*c]const u8,
 ) callconv(.c) u8 {
+    if (requested_mode == null) {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const _operation_id = d.queueOperation(
@@ -432,6 +436,10 @@ export fn ls_cli_send_input(
     retain_input: bool,
     retain_trailing_prompt: bool,
 ) callconv(.c) u8 {
+    if (input == null or requested_mode == null or input_handling == null) {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.sendInputOptionsFromArgs(
@@ -481,6 +489,10 @@ export fn ls_cli_send_inputs(
     retain_input: bool,
     retain_trailing_prompt: bool,
 ) callconv(.c) u8 {
+    if (inputs == null or requested_mode == null or input_handling == null) {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.sendInputsOptionsFromArgs(
@@ -533,6 +545,17 @@ export fn ls_cli_send_prompted_input(
     hidden_response: bool,
     retain_trailing_prompt: bool,
 ) callconv(.c) u8 {
+    if (input == null or
+        prompt_exact == null or
+        prompt_pattern == null or
+        response == null or
+        abort_input == null or
+        requested_mode == null or
+        input_handling == null)
+    {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const options = ffi_args_to_options.sendPromptedInputOptionsFromArgs(
@@ -619,6 +642,15 @@ export fn ls_cli_read_callback_should_execute(
     not_contains: [*c]const u8,
     execute: *bool,
 ) callconv(.c) u8 {
+    if (buf == null or
+        name == null or
+        contains == null or
+        contains_pattern == null or
+        not_contains == null)
+    {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     var triggered_callbacks: std.ArrayList([]const u8) = .empty;
 
     const should_execute = cli.readCallbackShouldExecute(
@@ -644,4 +676,174 @@ export fn ls_cli_read_callback_should_execute(
     }
 
     return @intFromEnum(ffi_common.FfiResult.success);
+}
+
+test "ffi: ls_cli_enter_mode null requested_mode" {
+    var op_id: u32 = 0;
+    var cancel: bool = false;
+    const result = ls_cli_enter_mode(@ptrFromInt(0xDEADBEEF), &op_id, &cancel, null);
+    try std.testing.expectEqual(@intFromEnum(ffi_common.FfiResult.invalid_argument), result);
+}
+
+test "ffi: ls_cli_send_input null arguments" {
+    var op_id: u32 = 0;
+    var cancel: bool = false;
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_input(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            null,
+            "mode",
+            "fuzzy",
+            false,
+            false,
+        ),
+    );
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_input(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            "input",
+            null,
+            "fuzzy",
+            false,
+            false,
+        ),
+    );
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_input(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            "input",
+            "mode",
+            null,
+            false,
+            false,
+        ),
+    );
+}
+
+test "ffi: ls_cli_send_inputs null arguments" {
+    var op_id: u32 = 0;
+    var cancel: bool = false;
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_inputs(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            null,
+            "mode",
+            "fuzzy",
+            false,
+            false,
+        ),
+    );
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_inputs(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            "inputs",
+            null,
+            "fuzzy",
+            false,
+            false,
+        ),
+    );
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_inputs(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            "inputs",
+            "mode",
+            null,
+            false,
+            false,
+        ),
+    );
+}
+
+test "ffi: ls_cli_send_prompted_input null arguments" {
+    var op_id: u32 = 0;
+    var cancel: bool = false;
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_prompted_input(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            null,
+            "exact",
+            "pattern",
+            "response",
+            "abort",
+            "mode",
+            "fuzzy",
+            false,
+            false,
+        ),
+    );
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_send_prompted_input(
+            @ptrFromInt(0xDEADBEEF),
+            &op_id,
+            &cancel,
+            "input",
+            null,
+            "pattern",
+            "response",
+            "abort",
+            "mode",
+            "fuzzy",
+            false,
+            false,
+        ),
+    );
+}
+
+test "ffi: ls_cli_read_callback_should_execute null arguments" {
+    var execute: bool = false;
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_read_callback_should_execute(
+            null,
+            "name",
+            "contains",
+            "pattern",
+            "not_contains",
+            &execute,
+        ),
+    );
+
+    try std.testing.expectEqual(
+        @intFromEnum(ffi_common.FfiResult.invalid_argument),
+        ls_cli_read_callback_should_execute(
+            "buf",
+            null,
+            "contains",
+            "pattern",
+            "not_contains",
+            &execute,
+        ),
+    );
 }

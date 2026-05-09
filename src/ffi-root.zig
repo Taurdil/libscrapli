@@ -80,6 +80,10 @@ export fn ls_cli_alloc(
     host: [*c]const u8,
     options_ptr: *ffi_common.LsOptions,
 ) callconv(.c) ?*ffi_common.LsDriver {
+    if (host == null) {
+        return null;
+    }
+
     ffi_common.registerSegfaultHandler();
 
     const allocator = ffi_common.getAllocator();
@@ -110,6 +114,10 @@ export fn ls_netconf_alloc(
     host: [*c]const u8,
     options_ptr: *ffi_common.LsOptions,
 ) callconv(.c) ?*ffi_common.LsDriver {
+    if (host == null) {
+        return null;
+    }
+
     ffi_common.registerSegfaultHandler();
 
     const allocator = ffi_common.getAllocator();
@@ -183,6 +191,10 @@ export fn ls_session_write(
     buf: [*c]const u8,
     redacted: bool,
 ) callconv(.c) u8 {
+    if (buf == null) {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const s = switch (d.real_driver) {
@@ -211,6 +223,10 @@ export fn ls_session_write_and_return(
     buf: [*c]const u8,
     redacted: bool,
 ) callconv(.c) u8 {
+    if (buf == null) {
+        return @intFromEnum(ffi_common.FfiResult.invalid_argument);
+    }
+
     var d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
 
     const s = switch (d.real_driver) {
@@ -276,4 +292,32 @@ export fn ls_session_operation_timeout_ns(
     }
 
     return @intFromEnum(ffi_common.FfiResult.success);
+}
+
+test "ffi: ls_cli_alloc null host" {
+    const options = ls_alloc_driver_options().?;
+    defer ls_free_driver_options(options);
+
+    const driver = ls_cli_alloc(null, options);
+    try std.testing.expect(driver == null);
+}
+
+test "ffi: ls_netconf_alloc null host" {
+    const options = ls_alloc_driver_options().?;
+    defer ls_free_driver_options(options);
+
+    const driver = ls_netconf_alloc(null, options);
+    try std.testing.expect(driver == null);
+}
+
+test "ffi: ls_session_write null buf" {
+    const result = ls_session_write(@ptrFromInt(0xDEADBEEF), null, false);
+
+    try std.testing.expectEqual(@intFromEnum(ffi_common.FfiResult.invalid_argument), result);
+}
+
+test "ffi: ls_session_write_and_return null buf" {
+    const result = ls_session_write_and_return(@ptrFromInt(0xDEADBEEF), null, false);
+
+    try std.testing.expectEqual(@intFromEnum(ffi_common.FfiResult.invalid_argument), result);
 }
