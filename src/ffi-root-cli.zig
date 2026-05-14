@@ -7,6 +7,7 @@ const ffi_args_to_options = @import("ffi-args-to-cli-options.zig");
 const ffi_common = @import("ffi-common.zig");
 const ffi_driver = @import("ffi-driver.zig");
 const ffi_operations = @import("ffi-operations.zig");
+const ffi_options = @import("ffi-options.zig");
 
 /// For forcing inclusion in the ffi-root.zig entrypoint we use for the ffi layer.
 pub const noop = true;
@@ -676,6 +677,27 @@ export fn ls_cli_read_callback_should_execute(
     }
 
     return @intFromEnum(ffi_common.FfiResult.success);
+}
+
+export fn ls_cli_update_definition(
+    d_ptr: *ffi_common.LsDriver,
+    options_ptr: *ffi_common.LsOptions,
+) callconv(.c) u8 {
+    const d: *ffi_driver.FfiDriver = @ptrCast(@alignCast(d_ptr));
+
+    const o: *ffi_options.FFIOptions = @ptrCast(@alignCast(options_ptr));
+
+    switch (d.real_driver) {
+        .cli => |rd| {
+            rd.updateDefinition(d.allocator, o.cliConfig(d.allocator)) catch |err| {
+                return ffi_common.toFfiResult(err);
+            };
+            return @intFromEnum(ffi_common.FfiResult.success);
+        },
+        else => {
+            return @intFromEnum(ffi_common.FfiResult.unknown);
+        },
+    }
 }
 
 test "ffi: ls_cli_enter_mode null requested_mode" {

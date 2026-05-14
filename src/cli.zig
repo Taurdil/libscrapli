@@ -889,6 +889,33 @@ pub const Driver = struct {
 
         return res;
     }
+
+    //// Gets the config and updates the definition and prompt_pattern in the session
+    pub fn updateDefinition(
+        self: *Driver,
+        allocator: std.mem.Allocator,
+        config: Config,
+    ) !void {
+        self.definition = switch (config.definition) {
+            .string => |d| try platform.YamlDefinition.toDefinition(
+                allocator,
+                self.io,
+                .{
+                    .string = d,
+                },
+            ),
+            .file => |d| try platform.YamlDefinition.toDefinition(
+                allocator,
+                self.io,
+                .{
+                    .file = d,
+                },
+            ),
+            .definition => |d| d,
+        };
+        self.session.prompt_pattern = self.definition.prompt_pattern;
+        self.session.compiled_prompt_pattern = re.pcre2Compile(self.session.prompt_pattern);
+    }
 };
 
 /// Check if a "read callback" should execute based on the given buffer.
