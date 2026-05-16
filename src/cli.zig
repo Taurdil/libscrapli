@@ -896,6 +896,7 @@ pub const Driver = struct {
         allocator: std.mem.Allocator,
         config: Config,
     ) !void {
+        self.definition.deinit();
         self.definition = switch (config.definition) {
             .string => |d| try platform.YamlDefinition.toDefinition(
                 allocator,
@@ -913,6 +914,7 @@ pub const Driver = struct {
             ),
             .definition => |d| d,
         };
+        re.pcre2Free(self.session.compiled_prompt_pattern.?);
         self.session.prompt_pattern = self.definition.prompt_pattern;
         self.session.compiled_prompt_pattern = re.pcre2Compile(self.session.prompt_pattern);
     }
